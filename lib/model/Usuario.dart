@@ -1,6 +1,6 @@
 
 class Usuario {
-
+  String _idUsuario;
   String _nome;
   String _email;
   String _senha;
@@ -15,12 +15,20 @@ class Usuario {
     Map<String, dynamic> map = {
       "nome" : this.nome,
       "email" : this.email
+
     };
 
     return map;
 
   }
-   String get urlImagem => _urlImagem;
+
+  String get idUsuario => _idUsuario;
+
+  set idUsuario(String value) {
+    _idUsuario = value;
+  }
+
+  String get urlImagem => _urlImagem;
 
  set urlImagem(String value) => _urlImagem = value;
 

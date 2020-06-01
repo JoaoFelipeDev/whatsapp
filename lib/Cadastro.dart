@@ -75,7 +75,7 @@ class _CadastroState extends State<Cadastro> {
       //Salvar dados do usuário
       Firestore db = Firestore.instance;
 
-      db.collection("usuarios")
+      db.collection("usuario")
           .document( firebaseUser.user.uid )
           .setData( usuario.toMap() );
 

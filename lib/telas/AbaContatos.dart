@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:whatsapp/model/Conversa.dart';
 import 'package:whatsapp/model/Usuario.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -31,6 +30,7 @@ class _AbaContatosState extends State<AbaContatos> {
     
 
       Usuario usuario = Usuario();
+      usuario.idUsuario = item.documentID;
       usuario.email = dados ["email"];
       usuario.nome = dados ["nome"];
       usuario.urlImagem = dados ["urlImagem"];
@@ -86,6 +86,13 @@ class _AbaContatosState extends State<AbaContatos> {
          Usuario usuario = listaItem [indice];
 
           return ListTile(
+              onTap: (){
+                Navigator.pushNamed(
+                    context,
+                    "/mensagens",
+                  arguments: usuario
+                );
+              },
             contentPadding: EdgeInsets.fromLTRB(16, 8, 16, 8),
             leading: CircleAvatar(
               maxRadius: 30,
