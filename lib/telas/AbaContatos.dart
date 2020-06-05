@@ -58,6 +58,7 @@ class _AbaContatosState extends State<AbaContatos> {
     _recuperarDadosUsuario();
   }
 
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Usuario>>(

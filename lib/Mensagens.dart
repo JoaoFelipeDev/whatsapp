@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:whatsapp/model/Conversa.dart';
 import 'package:whatsapp/model/Mensagem.dart';
 import 'package:whatsapp/model/Usuario.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,6 +28,26 @@ class _MensagensState extends State<Mensagens> {
   Firestore db = Firestore.instance;
 
   TextEditingController _controllerMensagem = TextEditingController();
+  final _controller = StreamController<QuerySnapshot>.broadcast();
+  ScrollController _scrollController = ScrollController();
+
+  Stream<QuerySnapshot> _adicionarListenerMensagens(){
+
+    final stream =  db
+        .collection("mensagens")
+        .document(_idUsuarioLogado)
+        .collection(_idUsuarioDestinatario)
+         .orderBy("data", descending: false)
+        .snapshots();
+
+    stream.listen((dados){
+      _controller.add( dados );
+      Timer(Duration(seconds: 1), (){
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      });
+    });
+
+  }
 
   _enviarMensagem() {
     String textoMensagem = _controllerMensagem.text;
@@ -32,12 +56,41 @@ class _MensagensState extends State<Mensagens> {
       mensagem.idUsuario = _idUsuarioLogado;
       mensagem.mensagem = textoMensagem;
       mensagem.urlImagem = "";
+      mensagem.data = Timestamp.now().toString();
       mensagem.tipo = "texto";
       //Salvando msg para o remetente
       _salvarMensagem(_idUsuarioLogado, _idUsuarioDestinatario, mensagem);
       //Salvando msg para o destinatatio
       _salvarMensagem(_idUsuarioDestinatario, _idUsuarioLogado, mensagem);
+
+      //Salvar conversa
+      _salvarConversa(mensagem);
+
     }
+  }
+  _salvarConversa(Mensagem msg){
+
+    //Salvando conversa remetente
+    Conversa cRemetente = Conversa();
+    cRemetente.idRemetente = _idUsuarioDestinatario;
+    cRemetente.idDestinatario = _idUsuarioLogado;
+    cRemetente.mensagem = msg.mensagem;
+    cRemetente.nome = widget.contato.nome;
+    cRemetente.caminhoFoto = widget.contato.urlImagem;
+    cRemetente.tipoMensagem = msg.tipo;
+    cRemetente.salvar();
+    //Salvando conversa Destinatario
+    Conversa cDestinatario = Conversa();
+    cDestinatario.idRemetente = _idUsuarioLogado;
+    cDestinatario.idDestinatario = _idUsuarioDestinatario;
+    cDestinatario.mensagem = msg.mensagem;
+    cDestinatario.nome = widget.contato.nome;
+    cDestinatario.caminhoFoto = widget.contato.urlImagem;
+    cDestinatario.tipoMensagem = msg.tipo;
+    cDestinatario.salvar();
+
+
+
   }
 
   _salvarMensagem(
@@ -98,6 +151,7 @@ class _MensagensState extends State<Mensagens> {
     Mensagem mensagem = Mensagem();
     mensagem.idUsuario = _idUsuarioLogado;
     mensagem.mensagem = "";
+    mensagem.data = Timestamp.now().toString();
     mensagem.urlImagem = url;
     mensagem.tipo = "imagem";
 
@@ -112,8 +166,8 @@ class _MensagensState extends State<Mensagens> {
     FirebaseAuth auth = FirebaseAuth.instance;
     FirebaseUser usuarioLogado = await auth.currentUser();
     _idUsuarioLogado = usuarioLogado.uid;
-
     _idUsuarioDestinatario = widget.contato.idUsuario;
+    _adicionarListenerMensagens();
   }
 
   @override
@@ -165,11 +219,7 @@ class _MensagensState extends State<Mensagens> {
     );
 
     var stream = StreamBuilder(
-      stream: db
-          .collection("mensagens")
-          .document(_idUsuarioLogado)
-          .collection(_idUsuarioDestinatario)
-          .snapshots(),
+      stream: _controller.stream,
       builder: (context, snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
@@ -194,6 +244,7 @@ class _MensagensState extends State<Mensagens> {
             } else {
               return Expanded(
                 child: ListView.builder(
+                  controller: _scrollController,
                     itemCount: querySnapshot.documents.length,
                     itemBuilder: (context, indice) {
                       //recupera mensagem
